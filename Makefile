@@ -1,7 +1,7 @@
 TAG := "local/gcp-signing-proxy:latest"
 
 build:
-	CGO_ENABLED=0 go build
+	CGO_ENABLED=0 gox -osarch="linux/amd64" -output="gcp-signing-proxy"
 	docker build --no-cache -t ${TAG} .
 
 run:
