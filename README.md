@@ -39,7 +39,7 @@ Available environment variables:
     - SIGNING_PROXY_SERVICE
         type: string
         description: gcp service to sign requests for
-        default: "gcs"
+        default: "storage"
     - SIGNING_PROXY_REGION
         type: string
         description: gcp region to sign requests for

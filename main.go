@@ -65,16 +65,6 @@ func statsdMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getEC2Tags(metadata *ec2metadata.EC2Metadata) []string {
-	region, err := metadata.Region()
-	if err != nil {
-		log.Println(err.Error())
-	}
-	return []string{
-		"region:" + region,
-	}
-}
-
 func main() {
 	// FIXME - update these
 	config := struct {
@@ -83,9 +73,9 @@ func main() {
 		StatsdListen    string `default:"127.0.0.1:8125" split_words:"true"`
 		StatsdNamespace string `default:""`
 		Listen          string `default:"0.0.0.0:8000"`
-		Service         string `default:"s3"`
-		Region          string `default:"us-east-1"`
-		Destination     string `default:"https://s3.amazonaws.com"`
+		Service         string `default:"storage"`
+		Region          string `default:"us-east1"`
+		Destination     string `default:"https://www.googleapis.com/storage/v1/b"`
 	}{}
 
 	// load envconfig
@@ -100,34 +90,12 @@ func main() {
 		log.Fatal("Could not parse destination URL: " + err.Error())
 	}
 
-	// initialize AWS session
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(config.Region),
-	}))
-
-	ec2tags := []string{}
-	metadata := ec2metadata.New(sess)
-	if metadata.Available() {
-		ec2tags = getEC2Tags(metadata)
-	}
-
-	// create signing http client
-	signer := v4.NewSigner(sess.Config.Credentials)
-	signingClient, err := aws_signing_client.New(
-		signer,
-		httpClient,
-		config.Service,
-		config.Region,
-	)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	// FIXME(willkg): get the credentials, create signing client, create
+	// proxy using signing client
 
 	// create proxy using signing http client
-	prxy, err := proxy.New(
-		destinationURL,
-		signingClient,
-	)
+	// FIXME add signingClient as second arg
+	prxy, err := proxy.New(destinationURL, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -152,7 +120,7 @@ func main() {
 		} else {
 			statsdClient.Namespace = config.StatsdNamespace + "."
 		}
-		statsdClient.Tags = append(statsdClient.Tags, ec2tags...)
+		// statsdClient.Tags = append(statsdClient.Tags, ec2tags...)
 		handler = statsdMiddleware(handler)
 	}
 
