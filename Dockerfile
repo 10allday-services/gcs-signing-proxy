@@ -1,4 +1,4 @@
 FROM scratch
 ADD gcp-signing-proxy /gcp-signing-proxy
-ADD cacert.pem /
+ADD cacert.pem /cacert.pem
 CMD ["/gcp-signing-proxy"]
