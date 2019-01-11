@@ -1,11 +1,13 @@
 package main
 
 import (
-	"cloud.google.com/go"
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/kelseyhightower/envconfig"
 
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
@@ -31,7 +33,7 @@ var (
 // get CA certs for our http.Client
 func init() {
 	// cacert.pem is a runtime dependency!
-	bs, err := ioutil.ReadFile("cacert.pem")
+	bs, err := ioutil.ReadFile("/cacert.pem")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -66,7 +68,7 @@ func statsdMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	// FIXME - update these
+	log.Println("Starting gcp-signing-proxy....")
 	config := struct {
 		LogRequests     bool   `default:"true" split_words:"true"`
 		Statsd          bool   `default:"true"`
@@ -83,12 +85,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	log.Println("Loaded config")
 
 	// *url.URL for convenience
 	destinationURL, err := url.Parse(config.Destination)
 	if err != nil {
 		log.Fatal("Could not parse destination URL: " + err.Error())
 	}
+
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile("/service_account_key.json"))
+	if err != nil {
+		log.Fatal("Could not get credentials: " + err.Error())
+	}
+	_ = client // Use the client.
+	log.Println("Built storage client")
 
 	// FIXME(willkg): get the credentials, create signing client, create
 	// proxy using signing client
@@ -124,7 +135,7 @@ func main() {
 		handler = statsdMiddleware(handler)
 	}
 
-	log.Println("starting " + appNamespace)
+	log.Println("Starting " + appNamespace)
 
 	// sane default timeouts
 	srv := &http.Server{

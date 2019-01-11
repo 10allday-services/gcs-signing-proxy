@@ -12,11 +12,17 @@ Images are available from Docker Hub:
 $ docker pull mozilla/gcp-signing-proxy
 ```
 
-To run:
+You'll need a GCP service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the GCP console.
+
+Then run gcp-signing-proxy like this:
 
 ```
-$ docker run -p 8000:8000 mozilla/gcp-signing-proxy:latest
+$ docker run -v CREDENTIALSFILE:/service_account_key.json -p 8000:8000 mozilla/gcp-signing-proxy:latest
 ```
+
+replacing `CREDENTIALSFILE` with the filename of your credentials file.
+
+This mounts your service account key JSON file as `/service_account_key.json` in the container and exposes the 8000 port to the host.
 
 The signing proxy listens on `0.0.0.0:8000` by default, which means that it will be exposed to the world _if you expose that port externally_.
 
@@ -58,9 +64,6 @@ Available environment variables:
         type: string
         description: valid URL that serves as a template for proxied requests. Scheme and Host are preserved for proxied requests.
         default: "https://www.googleapis.com/storage/v1/b"
-    - GOOGLE_APPLICATION_CREDENTIALS
-        type: string
-        description: path to JSON file that contains service account key
 
 ## Development
 
@@ -83,7 +86,21 @@ To sync `Gopkg.lock` and vendored packages:
 $ dep ensure
 ```
 
-There is a simple `version` const in `main.go` for now that we can use to manually track versions.
+You'll need a GCP service account key JSON file for a service account that has
+view access to the Google Cloud Storage bucket you're using. You can create a
+service account key in the GCP console.
+
+Then run gcp-signing-proxy like this:
+
+```
+$ CREDS=SERVICE_ACCOUNT_KEY make run
+```
+
+where `SERVICE_ACCOUNT_KEY` is the name of your service account key JSON file.
+
+You can do `CTRL-c` to stop the service.
+
+After making big changes, update the `version` const in `main.go`.
 
 We're using a `Dockerfile` `FROM scratch`, meaning there's nothing in there at the start.
 We have the [Mozilla CA certificate store](https://curl.haxx.se/docs/caextract.html) in this repo, and copy it into our containers at build time.

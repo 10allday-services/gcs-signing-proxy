@@ -24,11 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-# minor version pin on AWS SDK
-[[constraint]]
-  name = "cloud.google.com/go"
-  version = "~v0.34.0"
-
 [prune]
   go-tests = true
   unused-packages = true
