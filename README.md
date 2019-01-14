@@ -1,6 +1,6 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/mozilla-services/gcp-signing-proxy)](https://goreportcard.com/report/github.com/mozilla-services/gcp-signing-proxy)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mozilla-services/gcs-signing-proxy)](https://goreportcard.com/report/github.com/mozilla-services/gcs-signing-proxy)
 
-# gcp-signing-proxy
+# gcs-signing-proxy
 
 Proxies incoming HTTP GET requests to signed GCS object retrieval.
 
@@ -9,15 +9,15 @@ Proxies incoming HTTP GET requests to signed GCS object retrieval.
 Images are available from Docker Hub:
 
 ```
-$ docker pull mozilla/gcp-signing-proxy
+$ docker pull mozilla/gcs-signing-proxy
 ```
 
-You'll need a Google Compute Platform service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the GCP console.
+You'll need a Google Compute Platform service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the Google Compute Platform console.
 
-Then run gcp-signing-proxy like this:
+Then run gcs-signing-proxy like this:
 
 ```
-$ docker run -v CREDENTIALSFILE:/service_account_key.json -p 8000:8000 mozilla/gcp-signing-proxy:latest
+$ docker run -v CREDENTIALSFILE:/service_account_key.json -p 8000:8000 mozilla/gcs-signing-proxy:latest
 ```
 
 replacing `CREDENTIALSFILE` with the filename of your credentials file.
@@ -28,7 +28,7 @@ The signing proxy listens on `0.0.0.0:8000` by default, which means that it will
 
 ## Configuration
 
-The signing proxy is configured via environment variables with the prefix `SIGNING_PROXY_`. The [config struct](https://github.com/mozilla-services/gcp-signing-proxy/blob/master/main.go#L83-L92) has details on default values and variable types. Implementation by Kelsey Hightower's [envconfig](github.com/kelseyhightower/envconfig).
+The signing proxy is configured via environment variables with the prefix `SIGNING_PROXY_`. The [config struct](https://github.com/mozilla-services/gcs-signing-proxy/blob/master/main.go#L83-L92) has details on default values and variable types. Implementation by Kelsey Hightower's [envconfig](github.com/kelseyhightower/envconfig).
 
 Available environment variables:
 
@@ -79,7 +79,7 @@ To sync `Gopkg.lock` and vendored packages:
 $ dep ensure
 ```
 
-You'll need a Google Cloud Platform service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the GCP console.
+You'll need a Google Cloud Platform service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the Google Compute Platform console.
 
 You'll need to create a `my.env` env file with the bucket name in it like this:
 
@@ -89,7 +89,7 @@ SIGNING_PROXY_BUCKET=mybucket
 
 You can set other configuration in that file, too, or use the defaults.
 
-Then run gcp-signing-proxy like this:
+Then run gcs-signing-proxy like this:
 
 ```
 $ make run

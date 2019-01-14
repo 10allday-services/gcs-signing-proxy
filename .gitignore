@@ -1,5 +1,5 @@
 # The binary
-gcp-signing-proxy
+gcs-signing-proxy
 
 # Development related files
 my.env

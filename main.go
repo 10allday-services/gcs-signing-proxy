@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mozilla-services/gcp-signing-proxy/proxy"
+	"github.com/mozilla-services/gcs-signing-proxy/proxy"
 )
 
 const (
@@ -71,7 +71,7 @@ func statsdMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	log.Println("Starting gcp-signing-proxy....")
+	log.Println("Starting gcs-signing-proxy....")
 	config := struct {
 		LogRequests     bool   `default:"true" split_words:"true"`
 		Statsd          bool   `default:"true"`
