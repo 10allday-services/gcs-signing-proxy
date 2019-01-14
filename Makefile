@@ -6,7 +6,7 @@ build:
 	docker build --no-cache -t ${TAG} .
 
 run:
-	docker run -i -t -v ${CREDS}:/service_account_key.json --rm -p 8000:8000 ${TAG}
+	docker run -i -t -v ${CREDS}:/service_account_key.json --env-file my.env --rm -p 8000:8000 ${TAG}
 
 clean:
 	rm gcp-signing-proxy*

@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 package main
 
 import (
@@ -13,7 +17,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/mozilla-services/gcp-signing-proxy/proxy"
@@ -75,9 +78,7 @@ func main() {
 		StatsdListen    string `default:"127.0.0.1:8125" split_words:"true"`
 		StatsdNamespace string `default:""`
 		Listen          string `default:"0.0.0.0:8000"`
-		Service         string `default:"storage"`
-		Region          string `default:"us-east1"`
-		Destination     string `default:"https://www.googleapis.com/storage/v1/b"`
+		Bucket          string `default:""`
 	}{}
 
 	// load envconfig
@@ -87,26 +88,25 @@ func main() {
 	}
 	log.Println("Loaded config")
 
-	// *url.URL for convenience
-	destinationURL, err := url.Parse(config.Destination)
-	if err != nil {
-		log.Fatal("Could not parse destination URL: " + err.Error())
-	}
-
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile("/service_account_key.json"))
 	if err != nil {
 		log.Fatal("Could not get credentials: " + err.Error())
 	}
-	_ = client // Use the client.
 	log.Println("Built storage client")
 
-	// FIXME(willkg): get the credentials, create signing client, create
-	// proxy using signing client
+	bucket_name := config.Bucket
+	if bucket_name == "" {
+		log.Fatal("Requires a bucket")
+	}
+	bucket := client.Bucket(bucket_name)
+	log.Println("Bucket " + bucket_name + " is accessible")
 
-	// create proxy using signing http client
-	// FIXME add signingClient as second arg
-	prxy, err := proxy.New(destinationURL, nil)
+	// FIXME(willkg): check that bucket exists and we can access it
+	// with our credentials
+
+	// Create proxy using storage clientconfiguration and storage client
+	prxy, err := proxy.New(bucket)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -135,7 +135,7 @@ func main() {
 		handler = statsdMiddleware(handler)
 	}
 
-	log.Println("Starting " + appNamespace)
+	log.Println("Starting " + appNamespace + ": http://" + config.Listen)
 
 	// sane default timeouts
 	srv := &http.Server{

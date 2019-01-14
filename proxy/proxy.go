@@ -1,74 +1,53 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 package proxy
 
 import (
-	"fmt"
+	"cloud.google.com/go/storage"
+
+	"context"
 	"io"
 	"net/http"
-	"net/url"
-)
-
-var (
-	// ErrMissingDestination is returned when New is called with a nil destination
-	ErrMissingDestination = fmt.Errorf("no destination specified")
 )
 
 // New creates a Handler using the input destination and client
-func New(destination *url.URL, client *http.Client) (*Handler, error) {
-	if destination == nil {
-		return nil, ErrMissingDestination
-	}
-	if client == nil {
-		client = http.DefaultClient
-	}
-	return &Handler{destination, client}, nil
+func New(bucket *storage.BucketHandle) (*Handler, error) {
+	return &Handler{bucket}, nil
 }
 
-// Handler satisfies http.Handler
 type Handler struct {
-	destination *url.URL
-	client      *http.Client
+	bucket *storage.BucketHandle
 }
 
-func (proxy Handler) newProxiedRequest(r *http.Request) (*http.Request, error) {
-	proxiedURL := *r.URL
-	proxiedURL.Host = proxy.destination.Host
-	proxiedURL.Scheme = proxy.destination.Scheme
-
-	return http.NewRequest(
-		r.Method,
-		proxiedURL.String(),
-		r.Body,
-	)
-}
-
-// satisfies http.Handler
+// Satisfies http.Handler
 // per https://golang.org/pkg/net/http/#Handler
 // the server will recover panic() and log a stack trace
-func (proxy Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+func (proxy Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
 
-	proxiedReq, err := proxy.newProxiedRequest(r)
+	ctx := context.Background()
+
+	// FIXME(willkg): might need to use RawPath here or EscapedPath
+	url := *req.URL
+	path := url.Path
+	obj := proxy.bucket.Object(path)
+
+	// If the reader can't find anything, it's probably a 404
+	reader, err := obj.NewReader(ctx)
 	if err != nil {
-		http.Error(w, "Internal Server Error", 500)
-		panic(err)
+		http.NotFound(w, req)
+		return
 	}
+	defer reader.Close()
 
-	resp, err := proxy.client.Do(proxiedReq)
-	if err != nil {
-		http.Error(w, "Internal Server Error", 500)
-		panic(err)
-	}
-	defer resp.Body.Close()
+	// FIXME(willkg): do we need to set other headers?
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
-	// add all response headers to request
-	for k, vs := range resp.Header {
-		for _, v := range vs {
-			w.Header().Add(k, v)
-		}
-	}
-
-	w.WriteHeader(resp.StatusCode)
-	_, err = io.Copy(w, resp.Body)
+	// Proxy all the data from the reader to the response
+	_, err = io.Copy(w, reader)
 	if err != nil {
 		http.Error(w, "Internal Server Error", 500)
 		panic(err)

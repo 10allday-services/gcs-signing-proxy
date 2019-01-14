@@ -2,7 +2,7 @@
 
 # gcp-signing-proxy
 
-Signs http requests using JSON key file for service account.
+Proxies incoming HTTP GET requests to signed GCS object retrieval.
 
 ## Usage
 
@@ -12,7 +12,7 @@ Images are available from Docker Hub:
 $ docker pull mozilla/gcp-signing-proxy
 ```
 
-You'll need a GCP service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the GCP console.
+You'll need a Google Compute Platform service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the GCP console.
 
 Then run gcp-signing-proxy like this:
 
@@ -52,22 +52,13 @@ Available environment variables:
         type: string
         description: address for the proxy to listen on
         default: "0.0.0.0:8000"
-    - SIGNING_PROXY_SERVICE
+    - SIGNING_PROXY_BUCKET
         type: string
-        description: gcp service to sign requests for
-        default: "storage"
-    - SIGNING_PROXY_REGION
-        type: string
-        description: gcp region to sign requests for
-        default: "us-east1"
-    - SIGNING_PROXY_DESTINATION
-        type: string
-        description: valid URL that serves as a template for proxied requests. Scheme and Host are preserved for proxied requests.
-        default: "https://www.googleapis.com/storage/v1/b"
+        description: the GCS bucket
+        default: ""
 
-FIXME: Technically, this only works with GCS.
 
-## Development
+## Development/hacking
 
 Requirements:
 
@@ -88,22 +79,24 @@ To sync `Gopkg.lock` and vendored packages:
 $ dep ensure
 ```
 
-You'll need a GCP service account key JSON file for a service account that has
-view access to the Google Cloud Storage bucket you're using. You can create a
-service account key in the GCP console.
+You'll need a Google Cloud Platform service account key JSON file for a service account that has view access to the Google Cloud Storage bucket you're using. You can create a service account key in the GCP console.
+
+You'll need to create a `my.env` env file with the bucket name in it like this:
+
+```
+SIGNING_PROXY_BUCKET=mybucket
+```
+
+You can set other configuration in that file, too, or use the defaults.
 
 Then run gcp-signing-proxy like this:
 
 ```
-$ CREDS=SERVICE_ACCOUNT_KEY make run
+$ make run
 ```
 
-where `SERVICE_ACCOUNT_KEY` is the name of your service account key JSON file.
+You can also set the `CREDS` environment variable to the name of your service account key JSON file if it's not named `service_account_key.json`.
 
-You can do `CTRL-c` to stop the service.
+`CTRL-c` will stop the service.
 
 After making big changes, update the `version` const in `main.go`.
-
-We're using a `Dockerfile` `FROM scratch`, meaning there's nothing in there at the start.
-We have the [Mozilla CA certificate store](https://curl.haxx.se/docs/caextract.html) in this repo, and copy it into our containers at build time.
-This makes our image less than 11mb!

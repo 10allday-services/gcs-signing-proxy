@@ -1,2 +1,6 @@
+# The binary
 gcp-signing-proxy
+
+# Development related files
+my.env
 service_account_key.json
