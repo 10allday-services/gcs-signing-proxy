@@ -65,6 +65,8 @@ Available environment variables:
         description: valid URL that serves as a template for proxied requests. Scheme and Host are preserved for proxied requests.
         default: "https://www.googleapis.com/storage/v1/b"
 
+FIXME: Technically, this only works with GCS.
+
 ## Development
 
 Requirements:
