@@ -32,18 +32,27 @@ func (proxy Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// FIXME(willkg): might need to use RawPath here or EscapedPath
 	url := *req.URL
 	path := url.Path
-	obj := proxy.bucket.Object(path)
+	// Need to drop the / at the beginning of the path
+	obj := proxy.bucket.Object(path[1:])
 
-	// If the reader can't find anything, it's probably a 404
-	reader, err := obj.NewReader(ctx)
+	// Get the content type; if it errors, it's probably a 404
+	attrs, err := obj.Attrs(ctx)
 	if err != nil {
 		http.NotFound(w, req)
 		return
 	}
+
+	contentType := attrs.ContentType
+
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		http.Error(w, "Internal Server Error", 500)
+		panic(err)
+	}
 	defer reader.Close()
 
 	// FIXME(willkg): do we need to set other headers?
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
 
 	// Proxy all the data from the reader to the response
